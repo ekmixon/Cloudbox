@@ -103,10 +103,10 @@ def _inner_upgrade(settings1, settings2, key=None, overwrite=False):
                 continue
 
             # iterate children
-            if isinstance(v, dict) or isinstance(v, list):
+            if isinstance(v, (dict, list)):
                 merged[k], did_upgrade = _inner_upgrade(settings1[k], settings2[k], key=k,
                                                                 overwrite=overwrite)
-                sub_upgraded = did_upgrade if did_upgrade else sub_upgraded
+                sub_upgraded = did_upgrade or sub_upgraded
             elif settings1[k] != settings2[k] and overwrite:
                 merged = settings1
                 sub_upgraded = True
@@ -130,7 +130,7 @@ def upgrade_settings(defaults, currents):
 
 if __name__ == "__main__":
     # get playbook dir
-    if not len(sys.argv) >= 4:
+    if len(sys.argv) < 4:
         print("3 arguments must be supplied, playbook_dir default_settings current_settings")
         sys.exit(1)
     playbook_dir = sys.argv[1]

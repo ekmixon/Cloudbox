@@ -100,7 +100,7 @@ def get_file_name(path):
         file_name = os.path.basename(path)
         extensions = re.findall(r'\.([^.]+)', file_name)
         ext = '.'.join(extensions)
-        name = file_name.replace(".%s" % ext, '')
+        name = file_name.replace(f".{ext}", '')
         return name, ext
     except Exception:
         pass
@@ -114,10 +114,7 @@ def is_file_hash(file_name):
         r'^[a-f0-9]{128}$',
         r'^[a-zA-Z0-9]{42}$'
     ]
-    for hash in hash_regexp:
-        if re.match(hash, file_name):
-            return True
-    return False
+    return any(re.match(hash, file_name) for hash in hash_regexp)
 
 
 def find_files(folder, extension=None, depth=None):
@@ -131,9 +128,8 @@ def find_files(folder, extension=None, depth=None):
             file = os.path.join(path, name)
             if not extension:
                 file_list.append(file)
-            else:
-                if file.lower().endswith(extension.lower()):
-                    file_list.append(file)
+            elif file.lower().endswith(extension.lower()):
+                file_list.append(file)
 
     return sorted(file_list, key=lambda x: x.count(os.path.sep), reverse=True)
 
@@ -156,12 +152,7 @@ nzb_name = nzb_name.replace('.nzb', '')
 print("[INFO] Using \"%s\" for hashed filenames" % nzb_name)
 print("[INFO] Scanning \"%s\" for hashed filenames" % directory)
 
-# scan for files
-found_files = find_files(directory)
-if not found_files:
-    print("[INFO] No files were found in \"%s\"" % directory)
-    sys.exit(NZBGET_POSTPROCESS_NONE)
-else:
+if found_files := find_files(directory):
     print("[INFO] Found %d files to check for hashed filenames" % len(found_files))
     # loop files checking for file hash
     moved_files = 0
@@ -172,7 +163,7 @@ else:
 
         # is this a file hash
         if is_file_hash(file_name):
-            new_file_path = os.path.join(dir_name, "%s.%s" % (nzb_name, file_ext))
+            new_file_path = os.path.join(dir_name, f"{nzb_name}.{file_ext}")
             print("[INFO] Moving \"%s\" to \"%s\"" % (found_file_path, new_file_path))
             try:
                 shutil.move(found_file_path, new_file_path)
@@ -182,4 +173,7 @@ else:
 
     print("[INFO] Finished processing \"%s\", moved %d files" % (directory, moved_files))
 
+else:
+    print("[INFO] No files were found in \"%s\"" % directory)
+    sys.exit(NZBGET_POSTPROCESS_NONE)
 sys.exit(NZBGET_POSTPROCESS_SUCCESS)
